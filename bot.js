@@ -1,6 +1,7 @@
 const builder = require('botbuilder');
 const express = require('express');
 const bodyParser = require('body-parser');
+const rp = require('request-promise');
 
 const app = express();
 
@@ -12,23 +13,42 @@ const connector = new builder.ChatConnector({
 const bot = new builder.UniversalBot(connector);
 
 
+var messages = [];
+
+
 app.use(bodyParser.json());
 
 app.post('/api/messages', connector.listen());
 
 
-bot.dialog('/', [
-    function (session) {
-        // if (checkCommandContains(session.message.text)) {
-        //     // getData(
-        //     //     (json) => session.send(buildResultMessage(json)),
-        //     //     (error) => session.send(`${error}`)
-        //     // );
-        // }
+bot.dialog('/', function (session) {
 
-        console.log(session);
+    messages.push(session.message);
+    // console.log(session.message.user.name);
+    if(/(привет)|(hi)|(hello)/i.test(session.message.text)) {
+        session.send(`Привет комрад ${session.message.user.name}`);
+    } else if(/совет|грей|грэй|gray|как\sжить|подскажите|\?/i.test(session.message.text)) {
+        rp('http://fucking-great-advice.ru/api/random')
+        .then(r => {
+            var sovet = 'Совета нет(';
+            try {
+                r = JSON.parse(r);
+                sovet = `${session.message.user.name}] \`${r.text}\``;
+            } catch(e) {};
+
+            var data = {text: sovet, bot: "советчик"};
+
+            session.send(sovet);
+
+        })
+        .catch(() => {
+            session.send('Сукабляэксепшн');
+        });
+    } else {
+        var item = messages[Math.floor(Math.random()*messages.length)];
+        session.send(`Как сказал великий человек ${item.user.name}: "${item.text}"`)
     }
-]);
+});
 
 
-app.listen(3232);
+app.listen(8080);
