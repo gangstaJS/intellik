@@ -4,6 +4,10 @@ const bodyParser = require('body-parser');
 const rp = require('request-promise');
 const querystring = require('querystring');
 const d = require('./d');
+const shell = require('shelljs');
+const fs = require('fs');
+const Entities = require('html-entities').XmlEntities;
+const entities = new Entities();
 
 const app = express();
 
@@ -40,7 +44,9 @@ var Dictionary = ["%s, держи нас в курсе.",
 
 const VKApi = require('node-vkapi');
 const VK    = new VKApi();
- 
+
+
+console.log('Starting...', process.env.MICROSOFT_APP_ID, process.env.MICROSOFT_APP_PASSWORD);
 
 app.use(bodyParser.json());
 
@@ -58,6 +64,39 @@ app.get('/api/say', function(req, res) {
 
 
 bot.dialog('/', function (session) {
+
+    if(/js:(.+)/i.test(session.message.sourceEvent.text)) {
+        let code = '';
+
+        console.log(session.message);
+
+        if(/^Edited previous message:/i.test(session.message.sourceEvent.text)) {
+            session.message.sourceEvent.text = session.message.sourceEvent.text.split('<e_m')[0];
+        }
+
+        let match = /js:(.+)/i.exec(session.message.sourceEvent.text);
+
+        if(match[1]) {
+            code = match[1].trim();
+            code = entities.decode(code);
+        }
+
+        let f_name = `s_${Math.random().toString(36).substring(7)}.js`;
+
+        
+        fs.writeFile(`/tmp/${f_name}`, code, function(err) {
+            if(err) {
+                session.send(err);
+                return;
+            }
+
+            shell.exec(`node /tmp/${f_name}`, function(status, out) {
+                session.send(out);
+            });
+        });
+
+        return;
+    }
 
     if(/униан:?(\d+)?/i.test(session.message.text)) {
         // http://api.unian.net/ext_news.php?lang=ua&limit=10
@@ -83,8 +122,6 @@ bot.dialog('/', function (session) {
             console.log(err);
             session.send('Сукабляэксепшн');
         });
-
-
         return;
     }
 

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "export MICROSOFT_APP_ID=5772626d-e7cd-4480-9d5f-d1c9ccb25b46 && nodemon bot"
+    "start": "export MICROSOFT_APP_ID=5772626d-e7cd-4480-9d5f-d1c9ccb25b46 && export MICROSOFT_APP_PASSWORD=DXBPyHT1PrF13afCtDahmHa &&nodemon -L bot"
   },
   "author": "",
   "license": "ISC",
@@ -13,7 +13,9 @@
     "body-parser": "^1.17.1",
     "botbuilder": "^3.7.0",
     "express": "^4.15.2",
-    "request-promise": "^4.2.0"
+    "html-entities": "^1.2.1",
+    "request-promise": "^4.2.0",
+    "shelljs": "^0.7.7"
   },
   "devDependencies": {
     "nodemon": "^1.11.0"
