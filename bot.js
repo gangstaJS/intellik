@@ -65,19 +65,19 @@ app.get('/api/say', function(req, res) {
 
 bot.dialog('/', function (session) {
 
-    if(/js:(.+)/i.test(session.message.sourceEvent.text)) {
+    if(/js:(.+)/ig.test(session.message.sourceEvent.text)) {
         let code = '';
 
-        console.log(session.message);
+        session.message.sourceEvent.text = session.message.sourceEvent.text.split('\n').join(' ');
 
         if(/^Edited previous message:/i.test(session.message.sourceEvent.text)) {
             session.message.sourceEvent.text = session.message.sourceEvent.text.split('<e_m')[0];
         }
 
-        let match = /js:(.+)/i.exec(session.message.sourceEvent.text);
+        let match = /js:(.+)/ig.exec(session.message.sourceEvent.text);
 
         if(match[1]) {
-            code = match[1].trim();
+            code = match[1].trim()
             code = entities.decode(code);
         }
 
@@ -86,12 +86,16 @@ bot.dialog('/', function (session) {
         
         fs.writeFile(`/tmp/${f_name}`, code, function(err) {
             if(err) {
-                session.send(err);
+                console.log(err);
+                session.send('err', err);
                 return;
             }
 
-            shell.exec(`node /tmp/${f_name}`, function(status, out) {
-                session.send(out);
+            let child = shell.exec(`node /tmp/${f_name}`, {async:true});
+
+            child.stdout.on('data', function(data) {
+                // console.log('Exec', status);
+                session.send(data);
             });
         });
 
