@@ -50,9 +50,9 @@ console.log('Starting...', process.env.MICROSOFT_APP_ID, process.env.MICROSOFT_A
 
 app.use(bodyParser.json());
 
-app.post('/api/messages', connector.listen());
+app.post('/intellik/api/messages', connector.listen());
 
-app.get('/api/say', function(req, res) {
+app.get('/intellik/api/say', function(req, res) {
     console.log(req.query);
     if(req.query.text && gsession) {
         gsession.send(req.query.text);
@@ -63,7 +63,64 @@ app.get('/api/say', function(req, res) {
 });
 
 
+app.get('/intellik/api/who_is_open', function(req, res) {
+    console.log(req.query);
+    if(req.query.a && gsession) {
+        gsession.send(`По сылке перешёл ${gsession.message.user.name}`);
+        res.redirect(req.query.a);
+        res.end('ok');
+    } else {
+        res.end();
+    }
+});
+
+
 bot.dialog('/', function (session) {
+    gsession = session;
+    
+    if(/system/ig.test(session.message.sourceEvent.text)) {
+        const address = session.message.address;
+
+        setTimeout(() => {
+          let msg = new builder.Message().address(address);
+          msg.text('Hello, this is a notification');
+          bot.send(msg);
+        }, 5000);
+        return;
+        }
+
+    if(/criminal:(.+)/ig.test(session.message.sourceEvent.text)) {
+        session.message.sourceEvent.text = session.message.sourceEvent.text.split('\n').join(' ');
+
+        if(/^Edited previous message:/i.test(session.message.sourceEvent.text)) {
+            session.message.sourceEvent.text = session.message.sourceEvent.text.split('<e_m')[0];
+        }
+
+        let criminal = '';
+        let match = /criminal:(.+)/ig.exec(session.message.sourceEvent.text);
+        if(match[1]) {
+         criminal = match[1].trim()
+         //criminal = entities.decode(code);
+         }
+
+        rp({
+          method: 'GET',
+          uri: `http://95.85.12.25:3222/gangsta`,
+          qs: {name: criminal},
+          resolveWithFullResponse: true,
+          json: true
+        })
+        .then(r => {
+            //console.log(r.body);
+            session.send(`__${r.body.gangsta.name}__\n\n${r.body.gangsta.description}\n\n${r.body.gangsta.link}\n\n`);
+        })
+        .catch(r => {
+            console.log(r);
+            session.send('Not found');
+        });
+
+        return;
+    }
 
     if(/js:(.+)/ig.test(session.message.sourceEvent.text)) {
         let code = '';
@@ -83,7 +140,7 @@ bot.dialog('/', function (session) {
 
         let f_name = `s_${Math.random().toString(36).substring(7)}.js`;
 
-        
+
         fs.writeFile(`/tmp/${f_name}`, code, function(err) {
             if(err) {
                 console.log(err);
@@ -145,7 +202,7 @@ bot.dialog('/', function (session) {
     if(/погода/i.test(session.message.text)) {
         rp('http://apidev.accuweather.com/currentconditions/v1/324505.json?language=en&apikey=hoArfRosT1215')
         .then(r => {
-            session.send(''+JSON.parse(r)[0].Temperature.Metric.Value);
+            session.send('(shivering) '+JSON.parse(r)[0].Temperature.Metric.Value);
         })
         .catch(() => {
             session.send('Ой');
@@ -167,10 +224,6 @@ bot.dialog('/', function (session) {
 
         return;
     }
-
-
-
-    gsession = session;
 
     messages.push(session.message);
     // console.log(session);
